@@ -1,0 +1,36 @@
+{
+  "name": "namegen",
+  "version": "1.0.0",
+  "description": "Brandable name generator with crypto/fintech vibe",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p . && npm run build:web",
+    "build:lib": "tsc",
+    "build:web": "cd web && npm run build",
+    "cli": "tsx src/cli/index.ts",
+    "dev": "npm run build:lib && cd web && npm run dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["name-generator", "brand", "crypto", "fintech"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "dependencies": {
+    "p-limit": "^5.0.0",
+    "undici": "^6.2.0"
+  }
+}
