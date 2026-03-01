@@ -1,6 +1,6 @@
 {
   "name": "namegen",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Brandable name generator with crypto/fintech vibe",
   "type": "module",
   "main": "dist/index.js",
@@ -20,7 +20,12 @@
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["name-generator", "brand", "crypto", "fintech"],
+  "keywords": [
+    "name-generator",
+    "brand",
+    "crypto",
+    "fintech"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {

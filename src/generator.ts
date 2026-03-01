@@ -53,11 +53,14 @@ function getLetterWeights(
   });
 }
 
-function buildName(pattern: string, config: GeneratorConfig, rng: () => number): string {
+function buildName(
+  pattern: string,
+  config: GeneratorConfig,
+  vWeights: number[],
+  cWeights: number[],
+  rng: () => number
+): string {
   const result: string[] = [];
-  const vWeights = getLetterWeights(config.vowels, config.cryptoBias);
-  const cWeights = getLetterWeights(config.consonants, config.cryptoBias);
-
   for (const slot of pattern) {
     if (slot === 'V') {
       result.push(weightedPick(config.vowels, vWeights, rng));
@@ -126,12 +129,15 @@ export function generateNames(options: GenerateNamesOptions = {}): {
   const maxAttempts = count * 200;
   let attempts = 0;
 
+  const vWeights = getLetterWeights(config.vowels, config.cryptoBias);
+  const cWeights = getLetterWeights(config.consonants, config.cryptoBias);
+
   while (results.length < count && attempts < maxAttempts) {
     attempts++;
     const len = targetLengths[Math.floor(rng() * targetLengths.length)] as 4 | 5;
     const patterns = len === 4 ? config.patterns4 : config.patterns5;
     const pattern = patterns[Math.floor(rng() * patterns.length)];
-    const name = buildName(pattern, config, rng);
+    const name = buildName(pattern, config, vWeights, cWeights, rng);
 
     if (name.length !== len) continue;
     if (seen.has(name)) continue;

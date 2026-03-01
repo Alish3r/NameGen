@@ -44,24 +44,25 @@ export function ResultsTable({
   density = 'comfortable',
 }: ResultsTableProps) {
   return (
-    <div className={clsx('table-wrap', density === 'compact' && 'table-wrap--compact')}>
-      <table>
-        <thead>
-          <tr>
-            {onFavoriteToggle && <th className="fav-cell" aria-label="Shortlist" />}
-            <th>Name</th>
-            <th>Score</th>
-            <th>Pattern</th>
-            {probeColumns && (
-              <>
-                <th>.com</th>
-                <th>.net</th>
-                <th>.io</th>
-              </>
-            )}
-            <th>Reasons</th>
-          </tr>
-        </thead>
+    <div className={clsx('results-shell', density === 'compact' && 'results-shell--compact')}>
+      <div className="results-scroll">
+        <table>
+          <thead>
+            <tr className="results-sticky-header">
+              {onFavoriteToggle && <th className="fav-cell" aria-label="Shortlist" />}
+              <th>Name</th>
+              <th>Score</th>
+              <th>Pattern</th>
+              {probeColumns && (
+                <>
+                  <th>.com</th>
+                  <th>.net</th>
+                  <th>.io</th>
+                </>
+              )}
+              <th>Reasons</th>
+            </tr>
+          </thead>
         <tbody>
           {names.map((n, i) => {
             const avail = getAvailability(n.name);
@@ -124,7 +125,8 @@ export function ResultsTable({
             );
           })}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }

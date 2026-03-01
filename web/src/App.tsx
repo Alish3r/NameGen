@@ -9,7 +9,9 @@ import { SliderField } from './components/SliderField';
 import { PrimaryButton } from './components/PrimaryButton';
 import { ResultsTable } from './components/ResultsTable';
 import { StepIndicator } from './components/StepIndicator';
+import { BackgroundLayer } from './components/BackgroundLayer';
 import type { TldStatusMap } from './components/ResultsTable';
+import { BACKGROUND_THEMES, type BackgroundTheme } from './lib/background/themes';
 
 interface DomainProbeResult {
   domain: string;
@@ -25,6 +27,7 @@ import cryptoBlacklistRaw from '../../wordlist/crypto-blacklist.txt?raw';
 
 const BATCH_SIZE = 500;
 const MAX_COUNT = 10_000;
+const WORKER_POOL_SIZE = 4;
 const FAVORITES_KEY = 'namegen-favorites';
 
 const isBlacklist = createBlacklistFromText(englishBlacklistRaw, cryptoBlacklistRaw);
@@ -103,6 +106,7 @@ export default function App() {
   const [sortBy, setSortBy] = useState<'score' | 'name' | 'available'>('score');
   const [tableDensity, setTableDensity] = useState<'comfortable' | 'compact'>('comfortable');
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+  const [backgroundTheme, setBackgroundTheme] = useState<BackgroundTheme>('Dark Abstract');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -147,45 +151,48 @@ export default function App() {
     setProgress({ done: 0, total: count });
 
     const batchCount = Math.ceil(count / BATCH_SIZE);
-    const workers: Worker[] = [];
+    const batches = Array.from({ length: batchCount }, (_, i) => ({
+      index: i,
+      size: Math.min(BATCH_SIZE, count - i * BATCH_SIZE),
+    }));
 
     try {
-      for (let i = 0; i < batchCount; i++) {
-        const size = Math.min(BATCH_SIZE, count - i * BATCH_SIZE);
-        const worker = new Worker(
-          new URL('./generator.worker.ts', import.meta.url),
-          { type: 'module' }
-        );
-        workers.push(worker);
-        worker.postMessage({
-          batchIndex: i,
-          batchSize: size,
-          baseSeed: n,
-          length,
-          minScore: articulation,
-          cryptoBias,
-          includeY,
-        });
-      }
-
       let completed = 0;
-      const results: WorkerResult[] = await Promise.all(
-        workers.map(
-          (w) =>
-            new Promise<WorkerResult>((resolve, reject) => {
-              w.onmessage = (e) => {
-                completed += e.data.names.length;
-                setProgress((p) => (p ? { ...p, done: completed } : null));
-                resolve(e.data);
-                w.terminate();
-              };
-              w.onerror = () => {
-                reject(new Error('Worker failed'));
-                w.terminate();
-              };
-            })
-        )
-      );
+      const results: WorkerResult[] = [];
+
+      const runBatch = (batch: { index: number; size: number }): Promise<WorkerResult> =>
+        new Promise((resolve, reject) => {
+          const worker = new Worker(
+            new URL('./generator.worker.ts', import.meta.url),
+            { type: 'module' }
+          );
+          worker.onmessage = (e: MessageEvent<WorkerResult>) => {
+            completed += e.data.names.length;
+            setProgress((p) => (p ? { ...p, done: completed } : null));
+            worker.terminate();
+            resolve(e.data);
+          };
+          worker.onerror = () => {
+            worker.terminate();
+            reject(new Error('Worker failed'));
+          };
+          worker.postMessage({
+            batchIndex: batch.index,
+            batchSize: batch.size,
+            baseSeed: n,
+            length,
+            minScore: articulation,
+            cryptoBias,
+            includeY,
+          });
+        });
+
+      const poolSize = Math.min(WORKER_POOL_SIZE, batchCount);
+      for (let i = 0; i < batches.length; i += poolSize) {
+        const wave = batches.slice(i, i + poolSize);
+        const waveResults = await Promise.all(wave.map(runBatch));
+        results.push(...waveResults);
+      }
 
       const allNames = results.flatMap((r) => r.names);
       const seen = new Set<string>();
@@ -215,13 +222,10 @@ export default function App() {
   const handleProbe = useCallback(async () => {
     const topN = Math.min(50, names.length);
     if (topN === 0) return;
-    const tlds = ['com', 'net', 'io'];
-    const domains: string[] = [];
-    for (let i = 0; i < topN; i++) {
-      for (const tld of tlds) {
-        domains.push(`${names[i].name}.${tld}`);
-      }
-    }
+    const tlds = ['com', 'net', 'io'] as const;
+    const domains = names
+      .slice(0, topN)
+      .flatMap((n) => tlds.map((tld) => `${n.name}.${tld}`));
     setProbing(true);
     setProbeResults([]);
     setProbeError(null);
@@ -401,9 +405,27 @@ export default function App() {
 
   return (
     <div className="app">
+      <BackgroundLayer theme={backgroundTheme} showNewButton />
       <header className="header">
         <h1>NameGen</h1>
         <p className="tagline">Brandable name generator · 4–5 letters · Crypto/Fintech vibe</p>
+        <div className="header__background-controls">
+          <label className="header__theme-label">
+            <span className="header__theme-text">Background:</span>
+            <select
+              value={backgroundTheme}
+              onChange={(e) => setBackgroundTheme(e.target.value as BackgroundTheme)}
+              className="header__theme-select"
+              aria-label="Background theme"
+            >
+              {BACKGROUND_THEMES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
 
       <section className="controls">
@@ -550,12 +572,12 @@ export default function App() {
               disabled={generating}
               id="slider-pronounceability"
               gradient={{
-                start: '#dc2626',
-                end: '#fbbf24',
+                start: '#ff4d6d',
+                end: '#ff8a00',
                 track: 'rgba(255,255,255,0.06)',
               }}
-              thumbGradient="linear-gradient(135deg, #dc2626, #fbbf24)"
-              thumbGlow="rgba(251, 191, 36, 0.45)"
+              thumbGradient="linear-gradient(135deg, #ff4d6d, #ff8a00)"
+              thumbGlow="rgba(255, 77, 109, 0.5)"
               extraInlineInfo={
                 <span className="slider-field__example">
                   Example: <strong>{exampleName ?? '…'}</strong>
@@ -575,12 +597,12 @@ export default function App() {
               id="slider-crypto"
               rightUnit="%"
               gradient={{
-                start: '#fbbf24',
+                start: '#ff8a00',
                 end: '#8b5cf6',
                 track: 'rgba(255,255,255,0.06)',
               }}
-              thumbGradient="linear-gradient(135deg, #fbbf24, #8b5cf6)"
-              thumbGlow="rgba(139, 92, 246, 0.45)"
+              thumbGradient="linear-gradient(135deg, #ff8a00, #8b5cf6)"
+              thumbGlow="rgba(139, 92, 246, 0.5)"
             />
           </div>
         </ControlCard>

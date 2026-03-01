@@ -1,6 +1,32 @@
 # NameGen – Brandable Name Generator
 
+**Version 0.2.0**
+
 A production-quality generator for 4–5 letter pronounceable, meaningless brand names with a slight crypto/fintech vibe. No external APIs, no LLM, no network required. Fully deterministic when a seed is provided.
+
+## What it does
+
+- **Generates names** – 4–5 letter pronounceable names using phonotactic patterns (CVCV, VCCV, etc.)
+- **Scores pronounceability** – 0–100 score based on vowel/consonant alternation, cluster penalties, crypto bias
+- **Filters blacklists** – Excludes common English words and crypto brand terms
+- **Probes domains** – DNS + HTTP checks to classify .com/.net/.io as available, parked, or active
+- **Web UI** – Vite + React app with worker-based generation, shortlist, search, export
+
+## How it works
+
+- **Phonotactics**: Uses C/V slot patterns (e.g. CVCV, VCCVC) with weighted letter pools. Crypto bias boosts x/v/z/k/r/n/l.
+- **Scoring**: Combines alternation bonus, cluster penalties (xq, vv, etc.), repeated bigrams, triple letters.
+- **Blacklist**: Bundled wordlists at build time (web) or file-based (CLI). Cached for performance.
+- **Domain probe**: DNS lookup → HTTP fetch when resolved → fingerprint + classifier for parked/active.
+- **Web workers**: Batches of 500 names run in a pool of 4 workers; fallback to main thread on error.
+
+## Latest patch notes (v0.2.0)
+
+- **Added**: React ErrorBoundary, explicit Vitest include, worker pool (4 concurrent)
+- **Performance**: Blacklist caching, precomputed letter weights, flatMap for domain lists
+- **Fixed**: Memory pressure on large batches (10k+ names)
+
+See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## Quick Start
 
@@ -113,7 +139,7 @@ npm run build:lib   # Compile library only
 
 ## Versioning & Releases
 
-This project uses [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH). Release notes live in [CHANGELOG.md](CHANGELOG.md).
+This project uses [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH). Versions 0.x are pre-1.0 and not production-ready. Release notes live in [CHANGELOG.md](CHANGELOG.md).
 
 ### Creating a release
 

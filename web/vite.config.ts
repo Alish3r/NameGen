@@ -2,10 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { probeApiPlugin } from './vite-plugin-probe-api';
+import { backgroundApiPlugin } from './vite-plugin-background-api';
 
 export default defineConfig({
   plugins: [
-    probeApiPlugin(), // Must run first so /api/probe-domains is handled before Vite's SPA fallback
+    probeApiPlugin(),
+    backgroundApiPlugin(),
     react(),
   ],
   resolve: {

@@ -41,9 +41,7 @@ export function loadBlacklists(): { english: Set<string>; crypto: Set<string> } 
 }
 
 export function isBlacklisted(name: string): boolean {
-  const { english, crypto } = loadBlacklists();
-  const lower = name.toLowerCase();
-  return english.has(lower) || crypto.has(lower);
+  return getDefaultBlacklist()(name);
 }
 
 /** Returns the default blacklist checker (Node file-based). Use in browser: pass blacklist Set from bundled wordlist. */
